@@ -1,0 +1,18 @@
+[
+    {
+        "nombre": "Hamburguesa",
+        "precio": 3.5
+    },
+    {
+        "nombre": "Papas Fritas",
+        "precio": 1.0
+    },
+    {
+        "nombre": "Ensalada de frutas",
+        "precio": 2.5
+    },
+    {
+        "nombre": "Jugo Natural",
+        "precio": 1.75
+    }
+]

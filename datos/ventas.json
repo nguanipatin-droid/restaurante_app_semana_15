@@ -1,0 +1,22 @@
+[
+    {
+        "usuario": "Nahomy Guanipatin",
+        "producto": "Hamburguesa",
+        "fecha": "2026-09-22 06:03:17"
+    },
+    {
+        "usuario": "Carlos Torres",
+        "producto": "Ensalada de frutas",
+        "fecha": "2026-09-22 06:03:33"
+    },
+    {
+        "usuario": "admin",
+        "producto": "Jugo Natural",
+        "fecha": "2026-09-22 06:03:43"
+    },
+    {
+        "usuario": "Juan Lopez",
+        "producto": "Papas Fritas",
+        "fecha": "2026-09-22 06:06:54"
+    }
+]
