@@ -1,30 +1,28 @@
-import tkinter as tk
-
 from servicios.restaurante_servicio import RestauranteServicio
 from ui.login_view import LoginView
+from ui.main_view import MainView
 
 
-def main():
+def iniciar_app():
+
     servicio = RestauranteServicio()
 
-    if not servicio.listar_usuarios():
-        from modelos.usuario import Usuario
+    def abrir_principal(usuario):
 
-        usuario_inicial = Usuario("admin")
-
-        servicio.registrar_usuario(
-            usuario_inicial
+        app = MainView(
+            servicio,
+            usuario
         )
 
-    root = tk.Tk()
+        app.mainloop()
 
-    LoginView(
-        root,
-        servicio
+    login = LoginView(
+        servicio,
+        abrir_principal
     )
 
-    root.mainloop()
+    login.mainloop()
 
 
 if __name__ == "__main__":
-    main()
+    iniciar_app()

@@ -1,14 +1,38 @@
 [
     {
-        "nombre": "admin"
+        "identificador": "1",
+        "nombre": "Administrador",
+        "correo": "admin@restaurante.local",
+        "nombre_usuario": "admin",
+        "contrasena": "123456",
+        "rol": "Administrador",
+        "activo": true
     },
     {
-        "nombre": "Nahomy Guanipatin"
+        "identificador": "2",
+        "nombre": "Nahomy Guanipatin",
+        "correo": "nahomy@restaurante.local",
+        "nombre_usuario": "nahomy",
+        "contrasena": "123456",
+        "rol": "Cliente",
+        "activo": true
     },
     {
-        "nombre": "Carlos Torres"
+        "identificador": "3",
+        "nombre": "Carlos Torres",
+        "correo": "carlos@restaurante.local",
+        "nombre_usuario": "carlos",
+        "contrasena": "123456",
+        "rol": "Empleado",
+        "activo": true
     },
     {
-        "nombre": "Juan Lopez"
+        "identificador": "4",
+        "nombre": "Juan Lopez",
+        "correo": "juan@restaurante.local",
+        "nombre_usuario": "juan",
+        "contrasena": "123456",
+        "rol": "Cliente",
+        "activo": true
     }
 ]

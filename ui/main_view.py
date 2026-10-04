@@ -1,310 +1,742 @@
-import os
 import tkinter as tk
 from tkinter import ttk, messagebox
-from datetime import datetime
-
-from modelos.producto import Producto
-from modelos.usuario import Usuario
+from pathlib import Path
 
 
-class MainView:
-    def __init__(
-        self,
-        root,
-        servicio,
-        usuario_actual
-    ):
-        self.root = root
+class MainView(tk.Tk):
+
+    def __init__(self, servicio, usuario):
+        super().__init__()
+
         self.servicio = servicio
-        self.usuario_actual = usuario_actual
+        self.usuario_actual = usuario
 
-        self.root.title(
-            "Sistema de Restaurante"
+        # ==================================================
+        # CONFIGURACIÓN DE LA VENTANA
+        # ==================================================
+
+        self.title("Sistema de Restaurante")
+        self.geometry("1150x720")
+        self.minsize(1000, 650)
+
+        self.configure(
+            bg="#F4F6F8"
         )
 
-        self.root.geometry(
-            "900x650"
+        # ==================================================
+        # RUTAS DE LOS RECURSOS
+        # ==================================================
+
+        carpeta_proyecto = (
+            Path(__file__).resolve().parent.parent
         )
 
-        self.root.minsize(
-            800,
-            600
+        carpeta_assets = (
+            carpeta_proyecto / "assets"
         )
 
-        self.cargar_icono()
-        self.crear_interfaz()
+        ruta_logo = (
+            carpeta_assets / "logo original.png"
+        )
 
-    # =========================
-    # RECURSOS
-    # =========================
+        ruta_icono = (
+            carpeta_assets / "icono.png"
+        )
 
-    def obtener_ruta_asset(self, nombre_archivo):
-        base_dir = os.path.dirname(
-            os.path.dirname(
-                os.path.abspath(__file__)
+        if not ruta_logo.exists():
+
+            ruta_logo = (
+                carpeta_assets / "logo.png"
             )
-        )
 
-        return os.path.join(
-            base_dir,
-            "assets",
-            nombre_archivo
-        )
-
-    def cargar_icono(self):
-        ruta_icono = self.obtener_ruta_asset(
-            "icono.png"
-        )
-
-        if not os.path.exists(ruta_icono):
-            return
+        # ==================================================
+        # ICONO
+        # ==================================================
 
         try:
-            self.icono = tk.PhotoImage(
-                file=ruta_icono
+
+            self.icono_imagen = tk.PhotoImage(
+                file=str(ruta_icono)
             )
 
-            self.root.iconphoto(
+            self.iconphoto(
                 True,
-                self.icono
+                self.icono_imagen
             )
 
-        except tk.TclError:
-            self.icono = None
+        except Exception:
 
-    def cargar_logo(self):
-        ruta_logo = self.obtener_ruta_asset(
-            "logo.png"
-        )
+            self.icono_imagen = None
 
-        if not os.path.exists(ruta_logo):
-            return None
+        # ==================================================
+        # LOGO
+        # ==================================================
 
         try:
-            logo = tk.PhotoImage(
-                file=ruta_logo
+
+            self.logo_imagen = tk.PhotoImage(
+                file=str(ruta_logo)
             )
 
-            ancho = logo.width()
-            alto = logo.height()
+            if self.logo_imagen.width() > 200:
 
-            max_ancho = 180
-            max_alto = 80
-
-            factor_ancho = max(
-                1,
-                (ancho + max_ancho - 1)
-                // max_ancho
-            )
-
-            factor_alto = max(
-                1,
-                (alto + max_alto - 1)
-                // max_alto
-            )
-
-            factor = max(
-                factor_ancho,
-                factor_alto
-            )
-
-            if factor > 1:
-                logo = logo.subsample(
-                    factor,
-                    factor
+                factor = max(
+                    1,
+                    self.logo_imagen.width() // 180
                 )
 
-            return logo
+                self.logo_imagen = (
+                    self.logo_imagen.subsample(
+                        factor,
+                        factor
+                    )
+                )
+
+        except Exception:
+
+            self.logo_imagen = None
+
+        # ==================================================
+        # CENTRAR VENTANA
+        # ==================================================
+
+        self.update_idletasks()
+
+        ancho = 1150
+        alto = 720
+
+        pantalla_ancho = (
+            self.winfo_screenwidth()
+        )
+
+        pantalla_alto = (
+            self.winfo_screenheight()
+        )
+
+        posicion_x = (
+            pantalla_ancho - ancho
+        ) // 2
+
+        posicion_y = (
+            pantalla_alto - alto
+        ) // 2
+
+        self.geometry(
+            f"{ancho}x{alto}+{posicion_x}+{posicion_y}"
+        )
+
+        # ==================================================
+        # ESTILOS
+        # ==================================================
+
+        self.crear_estilos()
+
+        # ==================================================
+        # INTERFAZ
+        # ==================================================
+
+        self.crear_interfaz()
+
+        # ==================================================
+        # CARGAR DATOS
+        # ==================================================
+
+        self.cargar_datos_iniciales()
+
+    # ======================================================
+    # ESTILOS
+    # ======================================================
+
+    def crear_estilos(self):
+
+        estilo = ttk.Style()
+
+        try:
+
+            estilo.theme_use(
+                "clam"
+            )
 
         except tk.TclError:
-            return None
 
-    # =========================
+            pass
+
+        # ==================================================
+        # NOTEBOOK
+        # ==================================================
+
+        estilo.configure(
+            "TNotebook",
+            background="#F4F6F8",
+            borderwidth=0
+        )
+
+        estilo.configure(
+            "TNotebook.Tab",
+            background="#D9DEE3",
+            foreground="#263238",
+            padding=(30, 12),
+            font=("Arial", 10, "bold")
+        )
+
+        estilo.map(
+            "TNotebook.Tab",
+            background=[
+                ("selected", "#263238")
+            ],
+            foreground=[
+                ("selected", "white")
+            ]
+        )
+
+        # ==================================================
+        # LABELFRAME
+        # ==================================================
+
+        estilo.configure(
+            "TLabelframe",
+            background="white",
+            bordercolor="#D5DADF",
+            borderwidth=1,
+            relief="solid"
+        )
+
+        estilo.configure(
+            "TLabelframe.Label",
+            background="white",
+            foreground="#263238",
+            font=("Arial", 10, "bold")
+        )
+
+        # ==================================================
+        # LABEL
+        # ==================================================
+
+        estilo.configure(
+            "TLabel",
+            background="white",
+            foreground="#263238",
+            font=("Arial", 10)
+        )
+
+        # ==================================================
+        # ENTRADAS
+        # ==================================================
+
+        estilo.configure(
+            "TEntry",
+            padding=7
+        )
+
+        # ==================================================
+        # COMBOBOX
+        # ==================================================
+
+        estilo.configure(
+            "TCombobox",
+            padding=7
+        )
+
+        # ==================================================
+        # BOTÓN VERDE
+        # ==================================================
+
+        estilo.configure(
+            "Green.TButton",
+            background="#2E7D32",
+            foreground="white",
+            font=("Arial", 10, "bold"),
+            padding=(14, 8),
+            borderwidth=0
+        )
+
+        estilo.map(
+            "Green.TButton",
+            background=[
+                ("active", "#1B5E20")
+            ]
+        )
+
+        # ==================================================
+        # BOTÓN AZUL
+        # ==================================================
+
+        estilo.configure(
+            "Blue.TButton",
+            background="#1565C0",
+            foreground="white",
+            font=("Arial", 10, "bold"),
+            padding=(14, 8),
+            borderwidth=0
+        )
+
+        estilo.map(
+            "Blue.TButton",
+            background=[
+                ("active", "#0D47A1")
+            ]
+        )
+
+        # ==================================================
+        # BOTÓN MORADO
+        # ==================================================
+
+        estilo.configure(
+            "Purple.TButton",
+            background="#6A1B9A",
+            foreground="white",
+            font=("Arial", 10, "bold"),
+            padding=(14, 8),
+            borderwidth=0
+        )
+
+        estilo.map(
+            "Purple.TButton",
+            background=[
+                ("active", "#4A148C")
+            ]
+        )
+
+        # ==================================================
+        # BOTÓN NARANJA
+        # ==================================================
+
+        estilo.configure(
+            "Orange.TButton",
+            background="#EF6C00",
+            foreground="white",
+            font=("Arial", 10, "bold"),
+            padding=(14, 8),
+            borderwidth=0
+        )
+
+        estilo.map(
+            "Orange.TButton",
+            background=[
+                ("active", "#E65100")
+            ]
+        )
+
+        # ==================================================
+        # BOTÓN ROJO
+        # ==================================================
+
+        estilo.configure(
+            "Red.TButton",
+            background="#C62828",
+            foreground="white",
+            font=("Arial", 10, "bold"),
+            padding=(14, 8),
+            borderwidth=0
+        )
+
+        estilo.map(
+            "Red.TButton",
+            background=[
+                ("active", "#8E0000")
+            ]
+        )
+
+        # ==================================================
+        # BOTÓN GRIS
+        # ==================================================
+
+        estilo.configure(
+            "Gray.TButton",
+            background="#546E7A",
+            foreground="white",
+            font=("Arial", 10, "bold"),
+            padding=(14, 8),
+            borderwidth=0
+        )
+
+        estilo.map(
+            "Gray.TButton",
+            background=[
+                ("active", "#37474F")
+            ]
+        )
+
+        # ==================================================
+        # TREEVIEW
+        # ==================================================
+
+        estilo.configure(
+            "Treeview",
+            background="white",
+            foreground="#263238",
+            fieldbackground="white",
+            rowheight=34,
+            font=("Arial", 10),
+            borderwidth=0
+        )
+
+        estilo.configure(
+            "Treeview.Heading",
+            background="#37474F",
+            foreground="white",
+            font=("Arial", 10, "bold"),
+            padding=8
+        )
+
+        estilo.map(
+            "Treeview",
+            background=[
+                ("selected", "#DCE9F7")
+            ],
+            foreground=[
+                ("selected", "#263238")
+            ]
+        )
+
+    # ======================================================
     # INTERFAZ PRINCIPAL
-    # =========================
+    # ======================================================
 
     def crear_interfaz(self):
+
+        # ==================================================
+        # ENCABEZADO
+        # ==================================================
+
         encabezado = tk.Frame(
-            self.root,
-            padx=25,
-            pady=15
+            self,
+            bg="#263238",
+            height=95
         )
 
         encabezado.pack(
             fill="x"
         )
 
-        # -------------------------
+        encabezado.pack_propagate(
+            False
+        )
+
+        # ==================================================
         # LOGO
-        # -------------------------
+        # ==================================================
 
-        self.logo = self.cargar_logo()
+        if self.logo_imagen:
 
-        if self.logo is not None:
-            logo_label = tk.Label(
+            etiqueta_logo = tk.Label(
                 encabezado,
-                image=self.logo
+                image=self.logo_imagen,
+                bg="#263238"
             )
 
-            logo_label.pack(
+            etiqueta_logo.pack(
                 side="left",
-                padx=(0, 20)
+                padx=25
             )
 
-        # -------------------------
-        # TITULO
-        # -------------------------
+        # ==================================================
+        # NOMBRE DEL SISTEMA
+        # ==================================================
 
-        titulo = tk.Label(
+        nombre_sistema = tk.Frame(
             encabezado,
-            text="Sistema de Restaurante",
-            font=("Arial", 22, "bold")
+            bg="#263238"
         )
 
-        titulo.pack(
+        nombre_sistema.pack(
             side="left",
-            pady=10
+            padx=10
         )
 
-        # -------------------------
-        # USUARIO
-        # -------------------------
+        tk.Label(
+            nombre_sistema,
+            text="SISTEMA DE RESTAURANTE",
+            bg="#263238",
+            fg="white",
+            font=("Arial", 18, "bold")
+        ).pack(
+            anchor="w"
+        )
 
-        usuario_label = tk.Label(
+        # ==================================================
+        # INFORMACIÓN DEL USUARIO
+        # ==================================================
+
+        usuario_frame = tk.Frame(
             encabezado,
-            text=(
-                f"Usuario: "
-                f"{self.usuario_actual.nombre}"
-            ),
-            font=("Arial", 11)
+            bg="#263238"
         )
 
-        usuario_label.pack(
-            side="right"
+        usuario_frame.pack(
+            side="right",
+            padx=30
         )
 
-        separador = ttk.Separator(
-            self.root,
-            orient="horizontal"
+        tk.Label(
+            usuario_frame,
+            text=self.usuario_actual.nombre,
+            bg="#263238",
+            fg="white",
+            font=("Arial", 11, "bold")
+        ).pack(
+            anchor="e"
         )
 
-        separador.pack(
-            fill="x"
+        tk.Label(
+            usuario_frame,
+            text="@" + self.usuario_actual.nombre_usuario,
+            bg="#263238",
+            fg="#B0BEC5",
+            font=("Arial", 9)
+        ).pack(
+            anchor="e",
+            pady=(2, 0)
         )
 
-        # -------------------------
-        # PESTAÑAS
-        # -------------------------
+        tk.Label(
+            usuario_frame,
+            text=self.usuario_actual.rol,
+            bg="#263238",
+            fg="#81C784",
+            font=("Arial", 9, "bold")
+        ).pack(
+            anchor="e",
+            pady=(2, 0)
+        )
+
+        # ==================================================
+        # CONTENEDOR
+        # ==================================================
+
+        contenedor = tk.Frame(
+            self,
+            bg="#F4F6F8"
+        )
+
+        contenedor.pack(
+            fill="both",
+            expand=True,
+            padx=20,
+            pady=20
+        )
+
+        # ==================================================
+        # NOTEBOOK
+        # ==================================================
 
         self.notebook = ttk.Notebook(
-            self.root
+            contenedor
         )
 
         self.notebook.pack(
-            expand=True,
             fill="both",
-            padx=15,
-            pady=15
+            expand=True
         )
 
-        self.crear_pestana_productos()
-        self.crear_pestana_usuarios()
-        self.crear_pestana_ventas()
+        # ==================================================
+        # TAB PRODUCTOS
+        # ==================================================
 
-    # =========================
-    # PRODUCTOS
-    # =========================
-
-    def crear_pestana_productos(self):
-        pestana = ttk.Frame(
+        self.tab_productos = tk.Frame(
             self.notebook,
-            padding=15
+            bg="#F4F6F8"
         )
 
         self.notebook.add(
-            pestana,
+            self.tab_productos,
             text="Productos"
         )
 
+        # ==================================================
+        # TAB USUARIOS
+        # ==================================================
+
+        if self.usuario_actual.rol == "Administrador":
+
+            self.tab_usuarios = tk.Frame(
+                self.notebook,
+                bg="#F4F6F8"
+            )
+
+            self.notebook.add(
+                self.tab_usuarios,
+                text="Usuarios"
+            )
+
+        # ==================================================
+        # TAB VENTAS
+        # ==================================================
+
+        self.tab_ventas = tk.Frame(
+            self.notebook,
+            bg="#F4F6F8"
+        )
+
+        self.notebook.add(
+            self.tab_ventas,
+            text="Ventas"
+        )
+
+        # ==================================================
+        # CREAR CONTENIDO
+        # ==================================================
+
+        self.crear_tab_productos()
+
+        if self.usuario_actual.rol == "Administrador":
+
+            self.crear_tab_usuarios()
+
+        self.crear_tab_ventas()
+
+        # ==================================================
+        # EVENTOS
+        # ==================================================
+
+        self.tree_productos.bind(
+            "<<TreeviewSelect>>",
+            self.seleccionar_producto
+        )
+
+        self.tree_ventas.bind(
+            "<<TreeviewSelect>>",
+            lambda event: None
+        )
+
+        if self.usuario_actual.rol == "Administrador":
+
+            self.tree_usuarios.bind(
+                "<<TreeviewSelect>>",
+                self.seleccionar_usuario
+            )
+
+    # ======================================================
+    # PRODUCTOS
+    # ======================================================
+
+    def crear_tab_productos(self):
+
+        titulo = tk.Label(
+            self.tab_productos,
+            text="Productos",
+            bg="#F4F6F8",
+            fg="#2E7D32",
+            font=("Arial", 20, "bold")
+        )
+
+        titulo.pack(
+            anchor="w",
+            padx=20,
+            pady=(20, 15)
+        )
+
+        # --------------------------------------------------
+        # BARRA DE COLOR
+        # --------------------------------------------------
+
+        barra = tk.Frame(
+            self.tab_productos,
+            bg="#2E7D32",
+            height=5
+        )
+
+        barra.pack(
+            fill="x",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        barra.pack_propagate(
+            False
+        )
+
+        # --------------------------------------------------
+        # FORMULARIO
+        # --------------------------------------------------
+
         formulario = ttk.LabelFrame(
-            pestana,
-            text="Registrar producto",
-            padding=15
+            self.tab_productos,
+            text="Registrar producto"
         )
 
         formulario.pack(
             fill="x",
+            padx=20,
             pady=(0, 15)
+        )
+
+        formulario.columnconfigure(
+            1,
+            weight=1
         )
 
         ttk.Label(
             formulario,
-            text="Nombre:"
+            text="Nombre del producto:"
         ).grid(
             row=0,
             column=0,
-            padx=5,
-            pady=5,
+            padx=(20, 10),
+            pady=20,
             sticky="w"
         )
 
-        self.entrada_producto = ttk.Entry(
-            formulario,
-            width=35
+        self.entry_producto = ttk.Entry(
+            formulario
         )
 
-        self.entrada_producto.grid(
+        self.entry_producto.grid(
             row=0,
             column=1,
-            padx=5,
-            pady=5
+            padx=10,
+            pady=20,
+            sticky="ew"
         )
 
         ttk.Label(
             formulario,
             text="Precio:"
         ).grid(
-            row=1,
-            column=0,
-            padx=5,
-            pady=5,
-            sticky="w"
+            row=0,
+            column=2,
+            padx=(20, 10),
+            pady=20
         )
 
-        self.entrada_precio = ttk.Entry(
+        self.entry_precio = ttk.Entry(
             formulario,
-            width=35
+            width=15
         )
 
-        self.entrada_precio.grid(
-            row=1,
-            column=1,
-            padx=5,
-            pady=5
+        self.entry_precio.grid(
+            row=0,
+            column=3,
+            padx=10,
+            pady=20
         )
 
-        boton = ttk.Button(
+        ttk.Button(
             formulario,
-            text="Registrar producto",
-            command=self.registrar_producto
+            text="Registrar",
+            style="Green.TButton",
+            command=self.guardar_producto
+        ).grid(
+            row=0,
+            column=4,
+            padx=(10, 20),
+            pady=20
         )
 
-        boton.grid(
-            row=2,
-            column=0,
-            columnspan=2,
-            pady=10
-        )
+        # --------------------------------------------------
+        # TABLA
+        # --------------------------------------------------
 
         tabla_frame = ttk.LabelFrame(
-            pestana,
-            text="Productos registrados",
-            padding=10
+            self.tab_productos,
+            text="Productos registrados"
         )
 
         tabla_frame.pack(
+            fill="both",
             expand=True,
-            fill="both"
+            padx=20,
+            pady=(0, 20)
         )
 
         columnas = (
@@ -312,318 +744,988 @@ class MainView:
             "precio"
         )
 
-        self.tabla_productos = ttk.Treeview(
+        self.tree_productos = ttk.Treeview(
             tabla_frame,
             columns=columnas,
             show="headings"
         )
 
-        self.tabla_productos.heading(
+        self.tree_productos.heading(
             "nombre",
-            text="Producto"
+            text="Nombre"
         )
 
-        self.tabla_productos.heading(
+        self.tree_productos.heading(
             "precio",
             text="Precio"
         )
 
-        self.tabla_productos.column(
+        self.tree_productos.column(
             "nombre",
-            width=350
+            width=600,
+            anchor="w"
         )
 
-        self.tabla_productos.column(
+        self.tree_productos.column(
             "precio",
-            width=150,
+            width=180,
             anchor="center"
         )
 
-        self.tabla_productos.pack(
+        scrollbar = ttk.Scrollbar(
+            tabla_frame,
+            orient="vertical",
+            command=self.tree_productos.yview
+        )
+
+        self.tree_productos.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        self.tree_productos.pack(
+            side="left",
+            fill="both",
             expand=True,
-            fill="both"
+            padx=(12, 0),
+            pady=12
         )
 
-        self.actualizar_productos()
+        scrollbar.pack(
+            side="right",
+            fill="y",
+            padx=(0, 12),
+            pady=12
+        )
 
-    def registrar_producto(self):
+    def guardar_producto(self):
+
         nombre = (
-            self.entrada_producto
+            self.entry_producto
             .get()
             .strip()
         )
 
-        precio_texto = (
-            self.entrada_precio
+        precio = (
+            self.entry_precio
             .get()
             .strip()
         )
 
-        if not nombre:
-            messagebox.showwarning(
-                "Dato requerido",
-                "Ingrese el nombre del producto."
-            )
-            return
-
-        if not precio_texto:
-            messagebox.showwarning(
-                "Dato requerido",
-                "Ingrese el precio."
-            )
-            return
-
         try:
-            precio = float(
-                precio_texto
-            )
 
-        except ValueError:
-            messagebox.showerror(
-                "Error",
-                "El precio debe ser un número."
-            )
-            return
-
-        try:
-            producto = Producto(
+            self.servicio.registrar_producto(
                 nombre,
                 precio
             )
 
-            self.servicio.registrar_producto(
-                producto
-            )
-
             messagebox.showinfo(
-                "Producto registrado",
-                "El producto se registró correctamente."
+                "Producto",
+                "Producto registrado correctamente.",
+                parent=self
             )
 
-            self.entrada_producto.delete(
+            self.entry_producto.delete(
                 0,
                 tk.END
             )
 
-            self.entrada_precio.delete(
+            self.entry_precio.delete(
                 0,
                 tk.END
             )
 
-            self.actualizar_productos()
+            self.actualizar_tabla_productos()
             self.actualizar_combos()
 
-        except (
-            ValueError,
-            OSError
-        ) as error:
+        except ValueError as error:
+
             messagebox.showerror(
-                "No se pudo registrar",
-                str(error)
+                "Error",
+                str(error),
+                parent=self
             )
 
-    def actualizar_productos(self):
-        for item in (
-            self.tabla_productos.get_children()
-        ):
-            self.tabla_productos.delete(
-                item
-            )
+    def seleccionar_producto(self, event=None):
 
-        for producto in (
-            self.servicio.listar_productos()
-        ):
-            self.tabla_productos.insert(
-                "",
-                tk.END,
-                values=(
-                    producto.nombre,
-                    f"${producto.precio:.2f}"
-                )
-            )
+        seleccion = (
+            self.tree_productos.selection()
+        )
 
-    # =========================
+        if not seleccion:
+            return
+
+        item = self.tree_productos.item(
+            seleccion[0]
+        )
+
+        valores = item.get(
+            "values",
+            []
+        )
+
+        if len(valores) < 2:
+            return
+
+        self.entry_producto.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_producto.insert(
+            0,
+            valores[0]
+        )
+
+        self.entry_precio.delete(
+            0,
+            tk.END
+        )
+
+        precio = str(
+            valores[1]
+        ).replace(
+            "$",
+            ""
+        )
+
+        self.entry_precio.insert(
+            0,
+            precio
+        )
+
+    # ======================================================
     # USUARIOS
-    # =========================
+    # ======================================================
 
-    def crear_pestana_usuarios(self):
-        pestana = ttk.Frame(
-            self.notebook,
-            padding=15
+    def crear_tab_usuarios(self):
+
+        titulo = tk.Label(
+            self.tab_usuarios,
+            text="Usuarios",
+            bg="#F4F6F8",
+            fg="#6A1B9A",
+            font=("Arial", 20, "bold")
         )
 
-        self.notebook.add(
-            pestana,
-            text="Usuarios"
+        titulo.pack(
+            anchor="w",
+            padx=20,
+            pady=(20, 15)
         )
+
+        # --------------------------------------------------
+        # BARRA DE COLOR
+        # --------------------------------------------------
+
+        barra = tk.Frame(
+            self.tab_usuarios,
+            bg="#6A1B9A",
+            height=5
+        )
+
+        barra.pack(
+            fill="x",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        barra.pack_propagate(
+            False
+        )
+
+        # --------------------------------------------------
+        # FORMULARIO
+        # --------------------------------------------------
 
         formulario = ttk.LabelFrame(
-            pestana,
-            text="Registrar usuario",
-            padding=15
+            self.tab_usuarios,
+            text="Datos del usuario"
         )
 
         formulario.pack(
             fill="x",
+            padx=20,
             pady=(0, 15)
         )
+
+        # --------------------------------------------------
+        # IDENTIFICADOR
+        # --------------------------------------------------
+
+        ttk.Label(
+            formulario,
+            text="Identificador:"
+        ).grid(
+            row=0,
+            column=0,
+            padx=10,
+            pady=10,
+            sticky="w"
+        )
+
+        self.entry_identificador = ttk.Entry(
+            formulario,
+            width=18,
+            state="readonly"
+        )
+
+        self.entry_identificador.grid(
+            row=0,
+            column=1,
+            padx=10,
+            pady=10
+        )
+
+        # --------------------------------------------------
+        # NOMBRE
+        # --------------------------------------------------
 
         ttk.Label(
             formulario,
             text="Nombre:"
         ).grid(
             row=0,
-            column=0,
-            padx=5,
-            pady=5
+            column=2,
+            padx=10,
+            pady=10,
+            sticky="w"
         )
 
-        self.entrada_usuario = ttk.Entry(
+        self.entry_nombre = ttk.Entry(
             formulario,
-            width=35
+            width=25
         )
 
-        self.entrada_usuario.grid(
+        self.entry_nombre.grid(
             row=0,
-            column=1,
-            padx=5,
-            pady=5
-        )
-
-        boton = ttk.Button(
-            formulario,
-            text="Registrar usuario",
-            command=self.registrar_usuario
-        )
-
-        boton.grid(
-            row=1,
-            column=0,
-            columnspan=2,
+            column=3,
+            padx=10,
             pady=10
         )
 
+        # --------------------------------------------------
+        # CORREO
+        # --------------------------------------------------
+
+        ttk.Label(
+            formulario,
+            text="Correo:"
+        ).grid(
+            row=1,
+            column=0,
+            padx=10,
+            pady=10,
+            sticky="w"
+        )
+
+        self.entry_correo = ttk.Entry(
+            formulario,
+            width=25
+        )
+
+        self.entry_correo.grid(
+            row=1,
+            column=1,
+            padx=10,
+            pady=10
+        )
+
+        # --------------------------------------------------
+        # NOMBRE DE USUARIO
+        # --------------------------------------------------
+
+        ttk.Label(
+            formulario,
+            text="Nombre de usuario:"
+        ).grid(
+            row=1,
+            column=2,
+            padx=10,
+            pady=10,
+            sticky="w"
+        )
+
+        self.entry_nombre_usuario = ttk.Entry(
+            formulario,
+            width=25
+        )
+
+        self.entry_nombre_usuario.grid(
+            row=1,
+            column=3,
+            padx=10,
+            pady=10
+        )
+
+        # --------------------------------------------------
+        # CONTRASEÑA
+        # --------------------------------------------------
+
+        ttk.Label(
+            formulario,
+            text="Contraseña:"
+        ).grid(
+            row=2,
+            column=0,
+            padx=10,
+            pady=10,
+            sticky="w"
+        )
+
+        self.entry_contrasena = ttk.Entry(
+            formulario,
+            width=25,
+            show="*"
+        )
+
+        self.entry_contrasena.grid(
+            row=2,
+            column=1,
+            padx=10,
+            pady=10
+        )
+
+        # --------------------------------------------------
+        # ROL
+        # --------------------------------------------------
+
+        ttk.Label(
+            formulario,
+            text="Rol:"
+        ).grid(
+            row=2,
+            column=2,
+            padx=10,
+            pady=10,
+            sticky="w"
+        )
+
+        self.combo_rol = ttk.Combobox(
+            formulario,
+            values=(
+                "Cliente",
+                "Empleado"
+            ),
+            state="readonly",
+            width=22
+        )
+
+        self.combo_rol.grid(
+            row=2,
+            column=3,
+            padx=10,
+            pady=10
+        )
+
+        self.combo_rol.set(
+            "Cliente"
+        )
+
+        # --------------------------------------------------
+        # BOTONES
+        # --------------------------------------------------
+
+        botones = tk.Frame(
+            formulario,
+            bg="white"
+        )
+
+        botones.grid(
+            row=3,
+            column=0,
+            columnspan=4,
+            pady=(5, 15)
+        )
+
+        ttk.Button(
+            botones,
+            text="Registrar",
+            style="Purple.TButton",
+            command=self.guardar_usuario
+        ).pack(
+            side="left",
+            padx=4
+        )
+
+        ttk.Button(
+            botones,
+            text="Actualizar",
+            style="Blue.TButton",
+            command=self.actualizar_usuario
+        ).pack(
+            side="left",
+            padx=4
+        )
+
+        ttk.Button(
+            botones,
+            text="Cambiar contraseña",
+            style="Orange.TButton",
+            command=self.cambiar_contrasena
+        ).pack(
+            side="left",
+            padx=4
+        )
+
+        ttk.Button(
+            botones,
+            text="Habilitar / Deshabilitar",
+            style="Red.TButton",
+            command=self.cambiar_estado_usuario
+        ).pack(
+            side="left",
+            padx=4
+        )
+
+        ttk.Button(
+            botones,
+            text="Limpiar",
+            style="Gray.TButton",
+            command=self.limpiar_formulario_usuario
+        ).pack(
+            side="left",
+            padx=4
+        )
+
+        # --------------------------------------------------
+        # TABLA
+        # --------------------------------------------------
+
         tabla_frame = ttk.LabelFrame(
-            pestana,
-            text="Usuarios registrados",
-            padding=10
+            self.tab_usuarios,
+            text="Usuarios registrados"
         )
 
         tabla_frame.pack(
+            fill="both",
             expand=True,
-            fill="both"
+            padx=20,
+            pady=(0, 20)
         )
 
-        self.tabla_usuarios = ttk.Treeview(
+        columnas = (
+            "id",
+            "nombre",
+            "correo",
+            "usuario",
+            "rol",
+            "estado"
+        )
+
+        self.tree_usuarios = ttk.Treeview(
             tabla_frame,
-            columns=("nombre",),
+            columns=columnas,
             show="headings"
         )
 
-        self.tabla_usuarios.heading(
+        self.tree_usuarios.heading(
+            "id",
+            text="ID"
+        )
+
+        self.tree_usuarios.heading(
             "nombre",
             text="Nombre"
         )
 
-        self.tabla_usuarios.column(
+        self.tree_usuarios.heading(
+            "correo",
+            text="Correo"
+        )
+
+        self.tree_usuarios.heading(
+            "usuario",
+            text="Usuario"
+        )
+
+        self.tree_usuarios.heading(
+            "rol",
+            text="Rol"
+        )
+
+        self.tree_usuarios.heading(
+            "estado",
+            text="Estado"
+        )
+
+        self.tree_usuarios.column(
+            "id",
+            width=60,
+            anchor="center"
+        )
+
+        self.tree_usuarios.column(
             "nombre",
-            width=400
+            width=180,
+            anchor="w"
         )
 
-        self.tabla_usuarios.pack(
+        self.tree_usuarios.column(
+            "correo",
+            width=220,
+            anchor="w"
+        )
+
+        self.tree_usuarios.column(
+            "usuario",
+            width=130,
+            anchor="center"
+        )
+
+        self.tree_usuarios.column(
+            "rol",
+            width=120,
+            anchor="center"
+        )
+
+        self.tree_usuarios.column(
+            "estado",
+            width=120,
+            anchor="center"
+        )
+
+        scrollbar = ttk.Scrollbar(
+            tabla_frame,
+            orient="vertical",
+            command=self.tree_usuarios.yview
+        )
+
+        self.tree_usuarios.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        self.tree_usuarios.pack(
+            side="left",
+            fill="both",
             expand=True,
-            fill="both"
+            padx=(12, 0),
+            pady=12
         )
 
-        self.actualizar_usuarios()
+        scrollbar.pack(
+            side="right",
+            fill="y",
+            padx=(0, 12),
+            pady=12
+        )
 
-    def registrar_usuario(self):
+    def guardar_usuario(self):
+
         nombre = (
-            self.entrada_usuario
+            self.entry_nombre
             .get()
             .strip()
         )
 
-        if not nombre:
-            messagebox.showwarning(
-                "Dato requerido",
-                "Ingrese el nombre del usuario."
-            )
-            return
+        correo = (
+            self.entry_correo
+            .get()
+            .strip()
+        )
+
+        nombre_usuario = (
+            self.entry_nombre_usuario
+            .get()
+            .strip()
+        )
+
+        contrasena = (
+            self.entry_contrasena
+            .get()
+        )
+
+        rol = (
+            self.combo_rol
+            .get()
+        )
 
         try:
-            usuario = Usuario(
-                nombre
-            )
 
             self.servicio.registrar_usuario(
-                usuario
+                nombre,
+                correo,
+                nombre_usuario,
+                contrasena,
+                rol
             )
 
             messagebox.showinfo(
-                "Usuario registrado",
-                "El usuario se registró correctamente."
+                "Usuario",
+                "Usuario registrado correctamente.",
+                parent=self
             )
 
-            self.entrada_usuario.delete(
+            self.limpiar_formulario_usuario()
+            self.actualizar_tabla_usuarios()
+            self.actualizar_combos()
+
+        except ValueError as error:
+
+            messagebox.showerror(
+                "Error",
+                str(error),
+                parent=self
+            )
+
+    def seleccionar_usuario(self, event=None):
+
+        seleccion = (
+            self.tree_usuarios.selection()
+        )
+
+        if not seleccion:
+            return
+
+        item = self.tree_usuarios.item(
+            seleccion[0]
+        )
+
+        valores = item.get(
+            "values",
+            []
+        )
+
+        if len(valores) < 6:
+            return
+
+        identificador = (
+            valores[0]
+        )
+
+        usuario = (
+            self.servicio.buscar_usuario_por_id(
+                identificador
+            )
+        )
+
+        if usuario is None:
+            return
+
+        # --------------------------------------------------
+        # ID
+        # --------------------------------------------------
+
+        self.entry_identificador.config(
+            state="normal"
+        )
+
+        self.entry_identificador.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_identificador.insert(
+            0,
+            usuario.identificador
+        )
+
+        self.entry_identificador.config(
+            state="readonly"
+        )
+
+        # --------------------------------------------------
+        # NOMBRE
+        # --------------------------------------------------
+
+        self.entry_nombre.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_nombre.insert(
+            0,
+            usuario.nombre
+        )
+
+        # --------------------------------------------------
+        # CORREO
+        # --------------------------------------------------
+
+        self.entry_correo.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_correo.insert(
+            0,
+            usuario.correo
+        )
+
+        # --------------------------------------------------
+        # USUARIO
+        # --------------------------------------------------
+
+        self.entry_nombre_usuario.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_nombre_usuario.insert(
+            0,
+            usuario.nombre_usuario
+        )
+
+        # --------------------------------------------------
+        # CONTRASEÑA
+        # --------------------------------------------------
+
+        self.entry_contrasena.delete(
+            0,
+            tk.END
+        )
+
+        # --------------------------------------------------
+        # ROL
+        # --------------------------------------------------
+
+        self.combo_rol.set(
+            usuario.rol
+        )
+
+    def actualizar_usuario(self):
+
+        identificador = (
+            self.entry_identificador.get()
+        )
+
+        if not identificador:
+
+            messagebox.showwarning(
+                "Usuario",
+                "Seleccione primero un usuario.",
+                parent=self
+            )
+
+            return
+
+        try:
+
+            self.servicio.actualizar_usuario(
+                identificador,
+                self.entry_nombre.get(),
+                self.entry_correo.get(),
+                self.entry_nombre_usuario.get(),
+                self.combo_rol.get()
+            )
+
+            messagebox.showinfo(
+                "Usuario",
+                "Usuario actualizado correctamente.",
+                parent=self
+            )
+
+            self.limpiar_formulario_usuario()
+            self.actualizar_tabla_usuarios()
+            self.actualizar_combos()
+
+        except ValueError as error:
+
+            messagebox.showerror(
+                "Error",
+                str(error),
+                parent=self
+            )
+
+    def cambiar_contrasena(self):
+
+        identificador = (
+            self.entry_identificador.get()
+        )
+
+        if not identificador:
+
+            messagebox.showwarning(
+                "Contraseña",
+                "Seleccione primero un usuario.",
+                parent=self
+            )
+
+            return
+
+        nueva_contrasena = (
+            self.entry_contrasena.get()
+        )
+
+        if not nueva_contrasena:
+
+            messagebox.showwarning(
+                "Contraseña",
+                "Ingrese la nueva contraseña.",
+                parent=self
+            )
+
+            return
+
+        try:
+
+            self.servicio.cambiar_contrasena(
+                identificador,
+                nueva_contrasena
+            )
+
+            messagebox.showinfo(
+                "Contraseña",
+                "Contraseña modificada correctamente.",
+                parent=self
+            )
+
+            self.entry_contrasena.delete(
                 0,
                 tk.END
             )
 
-            self.actualizar_usuarios()
+        except ValueError as error:
+
+            messagebox.showerror(
+                "Error",
+                str(error),
+                parent=self
+            )
+
+    def cambiar_estado_usuario(self):
+
+        identificador = (
+            self.entry_identificador.get()
+        )
+
+        if not identificador:
+
+            messagebox.showwarning(
+                "Usuario",
+                "Seleccione primero un usuario.",
+                parent=self
+            )
+
+            return
+
+        try:
+
+            self.servicio.cambiar_estado_usuario(
+                identificador
+            )
+
+            messagebox.showinfo(
+                "Usuario",
+                "Estado del usuario actualizado.",
+                parent=self
+            )
+
+            self.limpiar_formulario_usuario()
+            self.actualizar_tabla_usuarios()
             self.actualizar_combos()
 
-        except (
-            ValueError,
-            OSError
-        ) as error:
+        except ValueError as error:
+
             messagebox.showerror(
-                "No se pudo registrar",
-                str(error)
+                "Error",
+                str(error),
+                parent=self
             )
 
-    def actualizar_usuarios(self):
-        for item in (
-            self.tabla_usuarios.get_children()
-        ):
-            self.tabla_usuarios.delete(
-                item
-            )
+    def limpiar_formulario_usuario(self):
 
-        for usuario in (
-            self.servicio.listar_usuarios()
+        self.entry_identificador.config(
+            state="normal"
+        )
+
+        self.entry_identificador.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_identificador.config(
+            state="readonly"
+        )
+
+        self.entry_nombre.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_correo.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_nombre_usuario.delete(
+            0,
+            tk.END
+        )
+
+        self.entry_contrasena.delete(
+            0,
+            tk.END
+        )
+
+        self.combo_rol.set(
+            "Cliente"
+        )
+
+        if hasattr(
+            self,
+            "tree_usuarios"
         ):
-            self.tabla_usuarios.insert(
-                "",
-                tk.END,
-                values=(
-                    usuario.nombre,
+
+            for seleccion in (
+                self.tree_usuarios.selection()
+            ):
+
+                self.tree_usuarios.selection_remove(
+                    seleccion
                 )
-            )
 
-    # =========================
+    # ======================================================
     # VENTAS
-    # =========================
+    # ======================================================
 
-    def crear_pestana_ventas(self):
-        pestana = ttk.Frame(
-            self.notebook,
-            padding=15
+    def crear_tab_ventas(self):
+
+        titulo = tk.Label(
+            self.tab_ventas,
+            text="Ventas",
+            bg="#F4F6F8",
+            fg="#1565C0",
+            font=("Arial", 20, "bold")
         )
 
-        self.notebook.add(
-            pestana,
-            text="Ventas"
+        titulo.pack(
+            anchor="w",
+            padx=20,
+            pady=(20, 15)
         )
+
+        # --------------------------------------------------
+        # BARRA DE COLOR
+        # --------------------------------------------------
+
+        barra = tk.Frame(
+            self.tab_ventas,
+            bg="#1565C0",
+            height=5
+        )
+
+        barra.pack(
+            fill="x",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        barra.pack_propagate(
+            False
+        )
+
+        # --------------------------------------------------
+        # FORMULARIO
+        # --------------------------------------------------
 
         formulario = ttk.LabelFrame(
-            pestana,
-            text="Registrar venta",
-            padding=15
+            self.tab_ventas,
+            text="Registrar venta"
         )
 
         formulario.pack(
             fill="x",
+            padx=20,
             pady=(0, 15)
         )
 
@@ -633,70 +1735,72 @@ class MainView:
         ).grid(
             row=0,
             column=0,
-            padx=5,
-            pady=5,
-            sticky="w"
+            padx=15,
+            pady=20
         )
 
-        self.combo_usuario = ttk.Combobox(
+        self.combo_usuario_venta = ttk.Combobox(
             formulario,
             state="readonly",
-            width=35
+            width=30
         )
 
-        self.combo_usuario.grid(
+        self.combo_usuario_venta.grid(
             row=0,
             column=1,
-            padx=5,
-            pady=5
+            padx=10,
+            pady=20
         )
 
         ttk.Label(
             formulario,
             text="Producto:"
         ).grid(
-            row=1,
-            column=0,
-            padx=5,
-            pady=5,
-            sticky="w"
+            row=0,
+            column=2,
+            padx=15,
+            pady=20
         )
 
-        self.combo_producto = ttk.Combobox(
+        self.combo_producto_venta = ttk.Combobox(
             formulario,
             state="readonly",
-            width=35
+            width=30
         )
 
-        self.combo_producto.grid(
-            row=1,
-            column=1,
-            padx=5,
-            pady=5
+        self.combo_producto_venta.grid(
+            row=0,
+            column=3,
+            padx=10,
+            pady=20
         )
 
-        boton = ttk.Button(
+        ttk.Button(
             formulario,
-            text="Registrar venta",
-            command=self.registrar_venta
+            text="Registrar",
+            style="Blue.TButton",
+            command=self.guardar_venta
+        ).grid(
+            row=0,
+            column=4,
+            padx=15,
+            pady=20
         )
 
-        boton.grid(
-            row=2,
-            column=0,
-            columnspan=2,
-            pady=12
-        )
+        # --------------------------------------------------
+        # TABLA
+        # --------------------------------------------------
 
         tabla_frame = ttk.LabelFrame(
-            pestana,
-            text="Ventas registradas",
-            padding=10
+            self.tab_ventas,
+            text="Ventas registradas"
         )
 
         tabla_frame.pack(
+            fill="both",
             expand=True,
-            fill="both"
+            padx=20,
+            pady=(0, 20)
         )
 
         columnas = (
@@ -705,177 +1809,270 @@ class MainView:
             "fecha"
         )
 
-        self.tabla_ventas = ttk.Treeview(
+        self.tree_ventas = ttk.Treeview(
             tabla_frame,
             columns=columnas,
             show="headings"
         )
 
-        self.tabla_ventas.heading(
+        self.tree_ventas.heading(
             "usuario",
             text="Usuario"
         )
 
-        self.tabla_ventas.heading(
+        self.tree_ventas.heading(
             "producto",
             text="Producto"
         )
 
-        self.tabla_ventas.heading(
+        self.tree_ventas.heading(
             "fecha",
             text="Fecha"
         )
 
-        self.tabla_ventas.column(
+        self.tree_ventas.column(
             "usuario",
-            width=200
+            width=300,
+            anchor="w"
         )
 
-        self.tabla_ventas.column(
+        self.tree_ventas.column(
             "producto",
-            width=250
+            width=300,
+            anchor="w"
         )
 
-        self.tabla_ventas.column(
+        self.tree_ventas.column(
             "fecha",
-            width=180
+            width=250,
+            anchor="center"
         )
 
-        self.tabla_ventas.pack(
+        scrollbar = ttk.Scrollbar(
+            tabla_frame,
+            orient="vertical",
+            command=self.tree_ventas.yview
+        )
+
+        self.tree_ventas.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        self.tree_ventas.pack(
+            side="left",
+            fill="both",
             expand=True,
-            fill="both"
+            padx=(12, 0),
+            pady=12
         )
 
-        self.actualizar_combos()
-        self.actualizar_ventas()
-
-    def actualizar_combos(self):
-        if not hasattr(
-            self,
-            "combo_usuario"
-        ):
-            return
-
-        usuarios = [
-            usuario.nombre
-            for usuario in (
-                self.servicio.listar_usuarios()
-            )
-        ]
-
-        productos = [
-            producto.nombre
-            for producto in (
-                self.servicio.listar_productos()
-            )
-        ]
-
-        self.combo_usuario["values"] = usuarios
-        self.combo_producto["values"] = productos
-
-        if usuarios:
-            self.combo_usuario.current(0)
-        else:
-            self.combo_usuario.set("")
-
-        if productos:
-            self.combo_producto.current(0)
-        else:
-            self.combo_producto.set("")
-
-    def registrar_venta(self):
-        usuario_nombre = (
-            self.combo_usuario
-            .get()
-            .strip()
+        scrollbar.pack(
+            side="right",
+            fill="y",
+            padx=(0, 12),
+            pady=12
         )
 
-        producto_nombre = (
-            self.combo_producto
-            .get()
-            .strip()
+    def guardar_venta(self):
+
+        usuario = (
+            self.combo_usuario_venta.get()
         )
 
-        if not usuario_nombre:
-            messagebox.showwarning(
-                "Dato requerido",
-                "Seleccione un usuario."
-            )
-            return
-
-        if not producto_nombre:
-            messagebox.showwarning(
-                "Dato requerido",
-                "Seleccione un producto."
-            )
-            return
-
-        usuario = next(
-            (
-                u
-                for u in (
-                    self.servicio.listar_usuarios()
-                )
-                if u.nombre == usuario_nombre
-            ),
-            None
-        )
-
-        producto = next(
-            (
-                p
-                for p in (
-                    self.servicio.listar_productos()
-                )
-                if p.nombre == producto_nombre
-            ),
-            None
+        producto = (
+            self.combo_producto_venta.get()
         )
 
         try:
-            fecha = datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
 
             self.servicio.registrar_venta(
                 usuario,
-                producto,
-                fecha
+                producto
             )
 
             messagebox.showinfo(
-                "Venta registrada",
-                "La venta se registró correctamente."
+                "Venta",
+                "Venta registrada correctamente.",
+                parent=self
             )
 
-            self.actualizar_ventas()
+            self.combo_usuario_venta.set(
+                ""
+            )
 
-        except (
-            ValueError,
-            OSError
-        ) as error:
+            self.combo_producto_venta.set(
+                ""
+            )
+
+            self.actualizar_tabla_ventas()
+
+        except ValueError as error:
+
             messagebox.showerror(
-                "No se pudo registrar la venta",
-                str(error)
+                "Error",
+                str(error),
+                parent=self
             )
 
-    def actualizar_ventas(self):
+    # ======================================================
+    # TABLA PRODUCTOS
+    # ======================================================
+
+    def actualizar_tabla_productos(self):
+
         for item in (
-            self.tabla_ventas.get_children()
+            self.tree_productos.get_children()
         ):
-            self.tabla_ventas.delete(
+
+            self.tree_productos.delete(
                 item
             )
 
-        for venta in (
-            self.servicio.listar_ventas()
-        ):
-            self.tabla_ventas.insert(
+        productos = (
+            self.servicio.obtener_productos()
+        )
+
+        for producto in productos:
+
+            self.tree_productos.insert(
                 "",
                 tk.END,
                 values=(
-                    venta.usuario.nombre,
-                    venta.producto.nombre,
+                    producto.nombre,
+                    f"${producto.precio:.2f}"
+                )
+            )
+
+    # ======================================================
+    # TABLA USUARIOS
+    # ======================================================
+
+    def actualizar_tabla_usuarios(self):
+
+        if not hasattr(
+            self,
+            "tree_usuarios"
+        ):
+
+            return
+
+        for item in (
+            self.tree_usuarios.get_children()
+        ):
+
+            self.tree_usuarios.delete(
+                item
+            )
+
+        usuarios = (
+            self.servicio.obtener_usuarios()
+        )
+
+        for usuario in usuarios:
+
+            if usuario.activo:
+
+                estado = "Habilitado"
+
+            else:
+
+                estado = "Deshabilitado"
+
+            self.tree_usuarios.insert(
+                "",
+                tk.END,
+                values=(
+                    usuario.identificador,
+                    usuario.nombre,
+                    usuario.correo,
+                    usuario.nombre_usuario,
+                    usuario.rol,
+                    estado
+                )
+            )
+
+    # ======================================================
+    # TABLA VENTAS
+    # ======================================================
+
+    def actualizar_tabla_ventas(self):
+
+        for item in (
+            self.tree_ventas.get_children()
+        ):
+
+            self.tree_ventas.delete(
+                item
+            )
+
+        ventas = (
+            self.servicio.obtener_ventas()
+        )
+
+        for venta in ventas:
+
+            self.tree_ventas.insert(
+                "",
+                tk.END,
+                values=(
+                    venta.usuario,
+                    venta.producto,
                     venta.fecha
                 )
             )
+
+    # ======================================================
+    # ACTUALIZAR COMBOS
+    # ======================================================
+
+    def actualizar_combos(self):
+
+        usuarios = (
+            self.servicio.obtener_usuarios()
+        )
+
+        productos = (
+            self.servicio.obtener_productos()
+        )
+
+        usuarios_activos = []
+
+        for usuario in usuarios:
+
+            if usuario.activo:
+
+                usuarios_activos.append(
+                    usuario.nombre
+                )
+
+        nombres_productos = []
+
+        for producto in productos:
+
+            nombres_productos.append(
+                producto.nombre
+            )
+
+        self.combo_usuario_venta[
+            "values"
+        ] = usuarios_activos
+
+        self.combo_producto_venta[
+            "values"
+        ] = nombres_productos
+
+    # ======================================================
+    # CARGAR DATOS INICIALES
+    # ======================================================
+
+    def cargar_datos_iniciales(self):
+
+        self.actualizar_tabla_productos()
+
+        if self.usuario_actual.rol == "Administrador":
+
+            self.actualizar_tabla_usuarios()
+
+        self.actualizar_tabla_ventas()
+
+        self.actualizar_combos()

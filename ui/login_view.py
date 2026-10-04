@@ -1,281 +1,381 @@
-import os
 import tkinter as tk
 from tkinter import messagebox
+from pathlib import Path
 
-from ui.main_view import MainView
 
+class LoginView(tk.Tk):
 
-class LoginView:
-    def __init__(
-        self,
-        root,
-        servicio
-    ):
-        self.root = root
+    def __init__(self, servicio, on_login_success):
+        super().__init__()
+
         self.servicio = servicio
+        self.on_login_success = on_login_success
 
-        self.root.title(
-            "Sistema de Restaurante - Login"
+        # ==========================================
+        # RUTAS DE LOS RECURSOS
+        # ==========================================
+
+        carpeta_proyecto = Path(__file__).resolve().parent.parent
+        carpeta_assets = carpeta_proyecto / "assets"
+
+        ruta_logo = carpeta_assets / "logo original.png"
+        ruta_icono = carpeta_assets / "icono.png"
+
+        # Si no existe el logo original,
+        # utilizar logo.png como respaldo.
+        if not ruta_logo.exists():
+            ruta_logo = carpeta_assets / "logo.png"
+
+        # ==========================================
+        # CONFIGURACIÓN DE LA VENTANA
+        # ==========================================
+
+        self.title("Sistema de Restaurante")
+        self.geometry("700x560")
+        self.resizable(False, False)
+
+        self.configure(
+            bg="#ECEFF1"
         )
 
-        self.root.geometry(
-            "450x450"
-        )
-
-        self.root.resizable(
-            False,
-            False
-        )
-
-        self.cargar_icono()
-        self.crear_interfaz()
-
-    # =========================
-    # RECURSOS
-    # =========================
-
-    def obtener_ruta_asset(
-        self,
-        nombre_archivo
-    ):
-        base_dir = os.path.dirname(
-            os.path.dirname(
-                os.path.abspath(__file__)
-            )
-        )
-
-        return os.path.join(
-            base_dir,
-            "assets",
-            nombre_archivo
-        )
-
-    def cargar_icono(self):
-        ruta_icono = self.obtener_ruta_asset(
-            "icono.png"
-        )
-
-        if not os.path.exists(ruta_icono):
-            return
+        # ==========================================
+        # ICONO DE LA VENTANA
+        # ==========================================
 
         try:
-            self.icono = tk.PhotoImage(
-                file=ruta_icono
+
+            self.icono_imagen = tk.PhotoImage(
+                file=str(ruta_icono)
             )
 
-            self.root.iconphoto(
+            self.iconphoto(
                 True,
-                self.icono
+                self.icono_imagen
             )
 
-        except tk.TclError:
-            self.icono = None
+        except Exception:
 
-    def cargar_logo(self):
-        ruta_logo = self.obtener_ruta_asset(
-            "logo.png"
+            self.icono_imagen = None
+
+        # ==========================================
+        # CENTRAR LA VENTANA
+        # ==========================================
+
+        self.update_idletasks()
+
+        ancho = 700
+        alto = 560
+
+        pantalla_ancho = self.winfo_screenwidth()
+        pantalla_alto = self.winfo_screenheight()
+
+        posicion_x = (
+            pantalla_ancho - ancho
+        ) // 2
+
+        posicion_y = (
+            pantalla_alto - alto
+        ) // 2
+
+        self.geometry(
+            f"{ancho}x{alto}+{posicion_x}+{posicion_y}"
         )
 
-        if not os.path.exists(ruta_logo):
-            return None
+        # ==========================================
+        # CARGAR LOGO
+        # ==========================================
+
+        self.logo_imagen = None
 
         try:
-            logo = tk.PhotoImage(
-                file=ruta_logo
+
+            self.logo_imagen = tk.PhotoImage(
+                file=str(ruta_logo)
             )
 
-            ancho = logo.width()
-            alto = logo.height()
+            # Reducir el logo solamente si es
+            # demasiado grande.
+            if self.logo_imagen.width() > 300:
 
-            max_ancho = 180
-            max_alto = 120
-
-            factor_ancho = max(
-                1,
-                (ancho + max_ancho - 1)
-                // max_ancho
-            )
-
-            factor_alto = max(
-                1,
-                (alto + max_alto - 1)
-                // max_alto
-            )
-
-            factor = max(
-                factor_ancho,
-                factor_alto
-            )
-
-            if factor > 1:
-                logo = logo.subsample(
-                    factor,
-                    factor
+                factor = max(
+                    1,
+                    self.logo_imagen.width() // 250
                 )
 
-            return logo
+                self.logo_imagen = (
+                    self.logo_imagen.subsample(
+                        factor,
+                        factor
+                    )
+                )
 
-        except tk.TclError:
-            return None
+        except Exception:
 
-    # =========================
-    # INTERFAZ
-    # =========================
+            self.logo_imagen = None
+
+        # ==========================================
+        # CREAR INTERFAZ
+        # ==========================================
+
+        self.crear_interfaz()
+
+        # ==========================================
+        # CURSOR INICIAL
+        # ==========================================
+
+        self.entry_usuario.focus()
+
+        # ==========================================
+        # TECLA ENTER
+        # ==========================================
+
+        self.bind(
+            "<Return>",
+            lambda event: self.validar_login()
+        )
+
+    # ==================================================
+    # CREAR INTERFAZ
+    # ==================================================
 
     def crear_interfaz(self):
+
+        # ==========================================
+        # CONTENEDOR PRINCIPAL
+        # ==========================================
+
         contenedor = tk.Frame(
-            self.root,
-            padx=30,
-            pady=25
+            self,
+            bg="#ECEFF1"
         )
 
         contenedor.pack(
+            fill="both",
             expand=True,
-            fill="both"
+            padx=70,
+            pady=35
         )
 
-        self.logo = self.cargar_logo()
+        # ==========================================
+        # TARJETA PRINCIPAL
+        # ==========================================
 
-        if self.logo is not None:
-            logo_label = tk.Label(
-                contenedor,
-                image=self.logo
-            )
-
-            logo_label.pack(
-                pady=(5, 15)
-            )
-
-        else:
-            self.mostrar_titulo(
-                contenedor
-            )
-
-        subtitulo = tk.Label(
+        tarjeta = tk.Frame(
             contenedor,
-            text="Inicio de sesión",
-            font=("Arial", 13)
+            bg="white",
+            highlightbackground="#D5D8DC",
+            highlightthickness=1
         )
 
-        subtitulo.pack(
-            pady=(5, 20)
+        tarjeta.pack(
+            fill="both",
+            expand=True
         )
 
-        etiqueta = tk.Label(
-            contenedor,
-            text="Nombre de usuario:",
-            font=("Arial", 11)
+        # ==========================================
+        # LOGO
+        # ==========================================
+
+        if self.logo_imagen:
+
+            etiqueta_logo = tk.Label(
+                tarjeta,
+                image=self.logo_imagen,
+                bg="white"
+            )
+
+            etiqueta_logo.pack(
+                pady=(35, 35)
+            )
+
+        # ==========================================
+        # FORMULARIO
+        # ==========================================
+
+        formulario = tk.Frame(
+            tarjeta,
+            bg="white"
         )
 
-        etiqueta.pack(
+        formulario.pack(
+            padx=70,
+            fill="x"
+        )
+
+        # ==========================================
+        # NOMBRE DE USUARIO
+        # ==========================================
+
+        tk.Label(
+            formulario,
+            text="Nombre de usuario",
+            bg="white",
+            fg="#263238",
+            font=("Arial", 11, "bold"),
             anchor="w"
-        )
-
-        self.entrada_usuario = tk.Entry(
-            contenedor,
-            font=("Arial", 12)
-        )
-
-        self.entrada_usuario.pack(
+        ).pack(
             fill="x",
-            pady=(5, 20)
+            pady=(0, 7)
         )
 
-        boton = tk.Button(
-            contenedor,
-            text="Iniciar sesión",
-            command=self.iniciar_sesion,
-            width=20,
-            font=("Arial", 10, "bold")
+        self.entry_usuario = tk.Entry(
+            formulario,
+            font=("Arial", 12),
+            relief="solid",
+            bd=1,
+            bg="#FAFAFA",
+            fg="#263238",
+            insertbackground="#263238"
         )
 
-        boton.pack(
-            pady=10
+        self.entry_usuario.pack(
+            fill="x",
+            ipady=9,
+            pady=(0, 20)
         )
 
-        informacion = tk.Label(
-            contenedor,
-            text=(
-                "Use un usuario registrado "
-                "en el sistema."
-            ),
-            fg="gray"
+        # ==========================================
+        # CONTRASEÑA
+        # ==========================================
+
+        tk.Label(
+            formulario,
+            text="Contraseña",
+            bg="white",
+            fg="#263238",
+            font=("Arial", 11, "bold"),
+            anchor="w"
+        ).pack(
+            fill="x",
+            pady=(0, 7)
         )
 
-        informacion.pack(
-            pady=15
+        self.entry_contrasena = tk.Entry(
+            formulario,
+            font=("Arial", 12),
+            show="*",
+            relief="solid",
+            bd=1,
+            bg="#FAFAFA",
+            fg="#263238",
+            insertbackground="#263238"
         )
 
-    def mostrar_titulo(
-        self,
-        contenedor
-    ):
-        titulo = tk.Label(
-            contenedor,
-            text="Sistema de Restaurante",
-            font=("Arial", 20, "bold")
+        self.entry_contrasena.pack(
+            fill="x",
+            ipady=9
         )
 
-        titulo.pack(
-            pady=(20, 10)
+        # ==========================================
+        # BOTÓN INICIAR SESIÓN
+        # ==========================================
+
+        boton_login = tk.Button(
+            tarjeta,
+            text="Iniciar Sesión",
+            bg="#263238",
+            fg="white",
+            activebackground="#37474F",
+            activeforeground="white",
+            font=("Arial", 11, "bold"),
+            width=22,
+            height=2,
+            relief="flat",
+            cursor="hand2",
+            command=self.validar_login
         )
 
-    # =========================
-    # LOGIN
-    # =========================
+        boton_login.pack(
+            pady=(30, 25)
+        )
 
-    def iniciar_sesion(self):
-        nombre = (
-            self.entrada_usuario
+    # ==================================================
+    # VALIDAR INICIO DE SESIÓN
+    # ==================================================
+
+    def validar_login(self):
+
+        nombre_usuario = (
+            self.entry_usuario
             .get()
             .strip()
         )
 
-        if not nombre:
-            messagebox.showwarning(
-                "Dato requerido",
-                "Ingrese el nombre de usuario."
-            )
+        contrasena = (
+            self.entry_contrasena
+            .get()
+        )
 
-            return
+        # ==========================================
+        # VALIDAR NOMBRE DE USUARIO
+        # ==========================================
 
-        if not self.servicio.validar_login(
-            nombre
-        ):
-            messagebox.showerror(
-                "Acceso denegado",
-                "El usuario no está registrado."
-            )
+        if not nombre_usuario:
 
-            return
-
-        usuario_actual = None
-
-        for usuario in (
-            self.servicio.listar_usuarios()
-        ):
-            if (
-                usuario.nombre.lower()
-                == nombre.lower()
-            ):
-                usuario_actual = usuario
-                break
-
-        if usuario_actual is None:
             messagebox.showerror(
                 "Error",
-                "No se pudo encontrar el usuario."
+                "Ingrese su nombre de usuario.",
+                parent=self
             )
+
+            self.entry_usuario.focus()
 
             return
 
-        for widget in (
-            self.root.winfo_children()
-        ):
-            widget.destroy()
+        # ==========================================
+        # VALIDAR CONTRASEÑA
+        # ==========================================
 
-        MainView(
-            self.root,
-            self.servicio,
-            usuario_actual
-        )
+        if not contrasena:
+
+            messagebox.showerror(
+                "Error",
+                "Ingrese su contraseña.",
+                parent=self
+            )
+
+            self.entry_contrasena.focus()
+
+            return
+
+        # ==========================================
+        # COMPROBAR CREDENCIALES
+        # ==========================================
+
+        try:
+
+            usuario = self.servicio.validar_login(
+                nombre_usuario,
+                contrasena
+            )
+
+            # ======================================
+            # CERRAR LOGIN
+            # ======================================
+
+            self.destroy()
+
+            # ======================================
+            # ABRIR VENTANA PRINCIPAL
+            # ======================================
+
+            self.on_login_success(
+                usuario
+            )
+
+        except ValueError as error:
+
+            messagebox.showerror(
+                "Error de inicio de sesión",
+                str(error),
+                parent=self
+            )
+
+            # Limpiar contraseña
+
+            self.entry_contrasena.delete(
+                0,
+                tk.END
+            )
+
+            self.entry_contrasena.focus()

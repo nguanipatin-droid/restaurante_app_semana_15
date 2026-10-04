@@ -6,28 +6,15 @@ class Venta:
 
     def to_dict(self):
         return {
-            "usuario": self.usuario.nombre,
-            "producto": self.producto.nombre,
+            "usuario": self.usuario,
+            "producto": self.producto,
             "fecha": self.fecha
         }
 
     @classmethod
-    def from_dict(cls, datos, usuarios, productos):
-        usuario = next(
-            (u for u in usuarios if u.nombre == datos["usuario"]),
-            None
-        )
-
-        producto = next(
-            (p for p in productos if p.nombre == datos["producto"]),
-            None
-        )
-
-        if usuario is None or producto is None:
-            return None
-
+    def from_dict(cls, data):
         return cls(
-            usuario,
-            producto,
-            datos["fecha"]
+            usuario=data.get("usuario", ""),
+            producto=data.get("producto", ""),
+            fecha=data.get("fecha", "")
         )

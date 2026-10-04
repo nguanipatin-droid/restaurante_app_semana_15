@@ -3,57 +3,14 @@ import os
 
 
 class ArchivoServicio:
-    def __init__(self):
-        self.base_dir = os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))
-        )
 
-        self.datos_dir = os.path.join(
-            self.base_dir,
-            "datos"
-        )
-
-        os.makedirs(self.datos_dir, exist_ok=True)
-
-    def guardar(self, nombre_archivo, datos):
-        ruta = os.path.join(
-            self.datos_dir,
-            nombre_archivo
-        )
-
-        try:
-            with open(
-                ruta,
-                "w",
-                encoding="utf-8"
-            ) as archivo:
-                json.dump(
-                    datos,
-                    archivo,
-                    ensure_ascii=False,
-                    indent=4
-                )
-
-            return True
-
-        except (PermissionError, OSError):
-            return False
-
-    def cargar(self, nombre_archivo):
-        ruta = os.path.join(
-            self.datos_dir,
-            nombre_archivo
-        )
-
-        if not os.path.exists(ruta):
+    @staticmethod
+    def cargar_json(nombre_archivo):
+        if not os.path.exists(nombre_archivo):
             return []
 
         try:
-            with open(
-                ruta,
-                "r",
-                encoding="utf-8"
-            ) as archivo:
+            with open(nombre_archivo, "r", encoding="utf-8") as archivo:
                 contenido = archivo.read().strip()
 
                 if not contenido:
@@ -61,14 +18,27 @@ class ArchivoServicio:
 
                 return json.loads(contenido)
 
-        except FileNotFoundError:
+        except (json.JSONDecodeError, IOError):
             return []
 
-        except json.JSONDecodeError:
-            return []
+    @staticmethod
+    def guardar_json(nombre_archivo, datos):
+        try:
+            carpeta = os.path.dirname(nombre_archivo)
 
-        except PermissionError:
-            return []
+            if carpeta:
+                os.makedirs(carpeta, exist_ok=True)
 
-        except OSError:
-            return []
+            with open(nombre_archivo, "w", encoding="utf-8") as archivo:
+                json.dump(
+                    datos,
+                    archivo,
+                    ensure_ascii=False,
+                    indent=4
+                )
+
+        except IOError as e:
+            print(
+                f"Error al guardar el archivo "
+                f"{nombre_archivo}: {e}"
+            )

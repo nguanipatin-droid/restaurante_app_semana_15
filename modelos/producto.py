@@ -10,8 +10,8 @@ class Producto:
         }
 
     @classmethod
-    def from_dict(cls, datos):
+    def from_dict(cls, data):
         return cls(
-            datos["nombre"],
-            datos["precio"]
+            nombre=data.get("nombre", ""),
+            precio=data.get("precio", 0.0)
         )
